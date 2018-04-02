@@ -14,7 +14,8 @@ from geometry_msgs.msg import Twist, Vector3, Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
-import cormodule
+import Cor_Rosa
+import MadFox
 
 
 bridge = CvBridge()
@@ -42,6 +43,11 @@ def roda_todo_frame(imagem):
 	imgtime = imagem.header.stamp
 	lag = now-imgtime
 	delay = lag.nsecs
+
+	surf = cv2.xfeatures2d.SURF_create(hessianThreshold=5000)
+	madfox=cv2.imread("madfox.jpg")
+	kp1, des1 = surf.detectAndCompute(madfox,None)
+
 	print("delay ", "{:.3f}".format(delay/1.0E9))
 	if delay > atraso and check_delay==True:
 		print("Descartando por causa do delay do frame:", delay)
@@ -49,7 +55,13 @@ def roda_todo_frame(imagem):
 	try:
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
-		media, centro, area =  Cor_Rosa.identifica_cor(cv_image)
+
+		frame_gray=cv2.cvtColor(cv_image,cv2.COLOR_BGR2GRAY)
+		frame_gray=cv2.medianBlur(frame_gray,5)
+
+    		cv_image=MadFox.detect_features(madfox,kp1, des1,cv_image,frame_gray)
+
+		media, centro, area =  cv_image
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
 	except CvBridgeError as e:
