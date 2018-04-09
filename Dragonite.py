@@ -9,8 +9,8 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 # Initiate surf detector
 #surf = cv2.xfeatures2d.SIFT_create()
 surf = cv2.xfeatures2d.SURF_create(hessianThreshold=5000)
-madfox=cv2.imread("madfox.jpg")
-kp1, des1 = surf.detectAndCompute(madfox,None)
+dragonite=cv2.imread("dragonite.jpg")
+kp1, des1 = surf.detectAndCompute(dragonite,None)
 
 def detect_features(img,kp1,des1,frame,frame_g):
     MIN_MATCH_COUNT = 10
@@ -46,9 +46,6 @@ def detect_features(img,kp1,des1,frame,frame_g):
         matchesMask = mask.ravel().tolist()
         h,w = img.shape[0],img.shape[1]
 
-	centro = (frame.shape[0]//2, frame.shape[1]//2)
-	
-
         pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
 
         # Transforma os pontos da imagem origem para onde estao na imagem destino
@@ -56,6 +53,18 @@ def detect_features(img,kp1,des1,frame,frame_g):
 
         # Desenha as linhas
         frame = cv2.polylines(frame,[np.int32(dst)],True,255,3, cv2.LINE_AA)
+	
+	# Returns
+	# Centro da frame
+	centro = (frame.shape[0]//2, frame.shape[1]//2)
+	# Centro da imagem
+	x=0
+	y=0
+	for i in [np.int32(dst)]:
+		print(i)
+		x += [np.int32(dst)][0]
+	media = (x//4, y//4)
+	# Area da imagem
         
     else:
         print("Not enough matches are found - %d/%d" % (len(good),MIN_MATCH_COUNT))
@@ -67,14 +76,10 @@ def detect_features(img,kp1,des1,frame,frame_g):
                     flags = 2)
     #frame=drawMatches(img,kp1,frame_g,kp2,good[:20])
     
-    # HoughCircles - detects circles using the Hough Method. For an explanation of
-    # param1 and param2 please see an explanation here http://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
- 
-
-    return media, centro, area
+    return frame
 
 
-'''while(True):
+while(True):
     #print(timer)
     # Capture frame-by-frame
     #print("Novo frame")
@@ -86,7 +91,7 @@ def detect_features(img,kp1,des1,frame,frame_g):
   
 
     #More drawing functions @ http://docs.opencv.org/2.4/modules/core/doc/drawing_functions.html
-    frame=detect_features(madfox,kp1, des1,frame,frame_gray)
+    frame=detect_features(dragonite,kp1, des1,frame,frame_gray)
     
     # Display the resulting frame
     cv2.imshow('original',frame)
@@ -96,4 +101,4 @@ def detect_features(img,kp1,des1,frame,frame_g):
     #print("No circles were found")
 # When everything done, release the capture
 cap.release()
-cv2.destroyAllWindows()'''
+cv2.destroyAllWindows()
