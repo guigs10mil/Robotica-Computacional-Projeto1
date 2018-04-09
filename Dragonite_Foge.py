@@ -45,7 +45,7 @@ def roda_todo_frame(imagem):
 	delay = lag.nsecs
 
 	surf = cv2.xfeatures2d.SURF_create(hessianThreshold=5000)
-	dragonite=cv2.imread("dragonite.jpg")
+	dragonite=cv2.imread("dragonite.png")
 	kp1, des1 = surf.detectAndCompute(dragonite,None)
 
 	print("delay ", "{:.3f}".format(delay/1.0E9))

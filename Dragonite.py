@@ -3,12 +3,12 @@ import cv2
 from matplotlib import pyplot as plt
 
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 600)
 
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 400)
 # Initiate surf detector
 #surf = cv2.xfeatures2d.SIFT_create()
-surf = cv2.xfeatures2d.SURF_create(hessianThreshold=5000)
+surf = cv2.xfeatures2d.SURF_create(hessianThreshold=2000)
 dragonite=cv2.imread("dragonite.jpg")
 kp1, des1 = surf.detectAndCompute(dragonite,None)
 
@@ -57,13 +57,17 @@ def detect_features(img,kp1,des1,frame,frame_g):
 	# Returns
 	# Centro da frame
 	centro = (frame.shape[0]//2, frame.shape[1]//2)
+	#print(centro)
 	# Centro da imagem
 	x=0
 	y=0
-	for i in [np.int32(dst)]:
-		print(i)
-		x += [np.int32(dst)][0]
+	for i in range(0, len(np.int32(dst)-1)):
+		x += np.int32(dst)[i][0][0]
+		y += np.int32(dst)[i][0][1]
 	media = (x//4, y//4)
+	print("x: {}".format(x))
+	print("y: {}".format(y))
+	print("media: {}".format(media))
 	# Area da imagem
         
     else:
