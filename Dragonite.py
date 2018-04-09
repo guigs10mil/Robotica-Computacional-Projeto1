@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
+import math
 
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 600)
@@ -65,11 +66,32 @@ def detect_features(img,kp1,des1,frame,frame_g):
 		x += np.int32(dst)[i][0][0]
 		y += np.int32(dst)[i][0][1]
 	media = (x//4, y//4)
-	print("x: {}".format(x))
-	print("y: {}".format(y))
-	print("media: {}".format(media))
+	#print("x: {}".format(x))
+	#print("y: {}".format(y))
+	#print("media: {}".format(media))
 	# Area da imagem
-        
+        x1 = np.int32(dst)[0][0][0]
+	y1 = np.int32(dst)[0][0][1]
+
+	x2 = np.int32(dst)[1][0][0]
+	y2 = np.int32(dst)[1][0][1]
+
+	x3 = np.int32(dst)[2][0][0]
+	y3 = np.int32(dst)[2][0][1]
+
+
+	xdist1=x1-x2
+	ydist1=y1-y2
+
+	xdist2=x1-x3
+	ydist2=y1-y3
+
+
+	lado1=math.sqrt((xdist1)**2+(ydist1)**2)
+	lado2=math.sqrt((xdist2)**2+(ydist2)**2)
+
+	area=lado1*lado2
+    	print(area)
     else:
         print("Not enough matches are found - %d/%d" % (len(good),MIN_MATCH_COUNT))
         matchesMask = None
