@@ -11,10 +11,11 @@ from geometry_msgs.msg import Twist, Vector3, Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import LaserScan
 import smach
 import smach_ros
 
-import cormodule
+import Cor_Rosa
 
 bridge = CvBridge()
 
@@ -29,7 +30,7 @@ area = 0.0
 
 tolerancia_x = 50
 tolerancia_y = 20
-ang_speed = 0.4
+ang_speed = 0.1
 area_ideal = 60000 # área da distancia ideal do contorno - note que varia com a resolução da câmera
 tolerancia_area = 20000
 
@@ -37,6 +38,9 @@ tolerancia_area = 20000
 atraso = 1.5
 check_delay = False # Só usar se os relógios ROS da Raspberry e do Linux desktop estiverem sincronizados
 
+scanmin = 5
+distanciaMin = 0.3
+sleeptime = 0.2 
 
 def roda_todo_frame(imagem):
 	print("frame")
@@ -54,11 +58,21 @@ def roda_todo_frame(imagem):
 	try:
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
-		media, centro, area = cormodule.identifica_cor(cv_image)
+		media, centro, area = Cor_Rosa.identifica_cor(cv_image)
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
 	except CvBridgeError as e:
 		print('ex', e)
+
+def scaneou(dado):
+	global scanmin
+	scanmin = 5
+	
+	ranges = np.array(dado.ranges).round(decimals=2)
+	# ranges = ranges[140:210]  # só na frente
+	for i in ranges: 
+		if i < scanmin and i != 0:
+			scanmin = i
 
 
 class Procurando(smach.State):
@@ -66,15 +80,18 @@ class Procurando(smach.State):
 		smach.State.__init__(self, outcomes=['achou', 'procurando', 'vaibater'])
 	def execute(self, userdata):
 		global velocidade_saida
-		if media is None or len(media) == 0:
-			# print(media)
-			return 'procurando'
 
-		if False:
+		if scanmin < distanciaMin:
 			return 'vaibater'
 
+		global scanmin
+		if media is None or len(media) == 0 or media[0]==0:
+			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
+			velocidade_saida.publish(vel)
+			rospy.sleep(sleeptime)
+			return 'procurando'
+
 		else:
-			print(media)
 			return 'achou'
 
 
@@ -90,24 +107,25 @@ class Alinhando(smach.State):
 		smach.State.__init__(self, outcomes=['alinhando', 'andando', 'sumiu', 'vaibater'])
 	def execute(self, userdata):
 		global velocidade_saida
+		global scanmin
 
-		if media is None or len(media) == 0:
+		if scanmin < distanciaMin:
+			return 'vaibater'
+
+		if media is None or len(media) == 0 or media[0]==0:
 			return 'sumiu'
 
 		if math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x):
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, -ang_speed))
 			velocidade_saida.publish(vel)
+			rospy.sleep(sleeptime)
 			return 'alinhando'
 
 		if math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
 			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, ang_speed))
 			velocidade_saida.publish(vel)
-			return 'alinhando'
-
-		
-
-		if False:
-			return 'vaibater'
+			rospy.sleep(sleeptime)
+			return 'alinhando'		
 
 		else:
 			return 'andando'
@@ -119,36 +137,38 @@ class Andando(smach.State):
 
 	def execute(self, userdata):
 		global velocidade_saida
+		global scanmin
+
+		if scanmin < distanciaMin:
+			return 'vaibater'
+
 		if math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x) or math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
 			return 'alinhando'
 
-		if media is None or len(media)==0:
+		if media is None or len(media)==0 or media[0]==0:
 			return 'sumiu'
-
-		if False:
-			return 'vaibater'
 
 		else:
 			vel = Twist(Vector3(1, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
+			rospy.sleep(sleeptime)
 			return 'andando'
 
 
-# class Sobrevivendo(smach.State):
-# 	def __init__(self):
-# 		smach.State.__init__(self, outcomes=['tasafeprocurando', 'tasafemovendo', 'vaibater'])
-# 	def execute(self, userdata):
-# 		if centro not in centro:
-# 			return 'alinhando'
+class Sobrevivendo(smach.State):
+	def __init__(self):
+		smach.State.__init__(self, outcomes=['sobrevivendo', 'procurando'])
+	def execute(self, userdata):
+		global scanmin
 
-# 		if centro caixa == centro cam:
-# 			return 'andando'
+		if scanmin < distanciaMin:
+			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
+			velocidade_saida.publish(vel)
+			rospy.sleep(sleeptime)
+			return 'sobrevivendo'
 
-# 		if caixa not in tela:
-# 			return 'perdeu'
-
-# 		if achou parede:
-# 			return 'vaibater'
+		else:
+			return 'procurando'
 
 
 # main
@@ -156,9 +176,11 @@ def main():
 	global velocidade_saida
 	rospy.init_node('unico_estado')
 
-	recebedor = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, roda_todo_frame, queue_size=10, buff_size = 2**24)
+	recebedor = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, roda_todo_frame, queue_size=40, buff_size = 2**24)
 
 	velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
+
+	recebe_scan = rospy.Subscriber("/scan", LaserScan, scaneou)
 
 	# Cria uma máquina de estados
 	sm_top = smach.StateMachine(outcomes=['fim_geral'])
@@ -166,7 +188,10 @@ def main():
 	# Preenche a Smach com os estados
 	with sm_top:
 	    smach.StateMachine.add('PROCURANDO', Procurando(),
-	    	transitions={'achou': 'MOVENDO','procurando':'PROCURANDO', 'vaibater': 'fim_geral'})
+	    	transitions={'achou': 'MOVENDO','procurando':'PROCURANDO', 'vaibater': 'SOBREVIVENDO'})
+
+	    smach.StateMachine.add('SOBREVIVENDO', Sobrevivendo(),
+	    	transitions={'sobrevivendo': 'SOBREVIVENDO','procurando':'PROCURANDO'})
 
 	    smach.StateMachine.add('MOVENDO', Movendo(),
 	    	transitions={'alinhando': 'SUB'})
@@ -181,7 +206,7 @@ def main():
 	    		transitions={'alinhando': 'ALINHANDO', 'andando': 'ANDANDO', 'sumiu': 'procurando', 'vaibater': 'vaibater'})
 
 	    smach.StateMachine.add('SUB', sm_sub, 
-	    	transitions={'procurando': 'PROCURANDO', 'vaibater': 'fim_geral'})
+	    	transitions={'procurando': 'PROCURANDO', 'vaibater': 'SOBREVIVENDO'})
 
 	# Executa a máquina de estados
 	outcome = sm_top.execute()
