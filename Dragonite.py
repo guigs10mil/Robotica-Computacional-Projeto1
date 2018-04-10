@@ -13,11 +13,11 @@ surf = cv2.xfeatures2d.SURF_create(hessianThreshold=2000)
 dragonite=cv2.imread("dragonite.jpg")
 kp1, des1 = surf.detectAndCompute(dragonite,None)
 
-def detect_features(img,kp1,des1,frame,frame_g):
+def detect_features(img, kp1, des1, frame, frame_g):
     MIN_MATCH_COUNT = 10
-   
+
     # find the keypoints and descriptors with SURF in each image
-    
+
     kp2, des2 = surf.detectAndCompute(frame_g,None)
 
     FLANN_INDEX_KDTREE = 0
@@ -29,7 +29,8 @@ def detect_features(img,kp1,des1,frame,frame_g):
 
     # Tenta fazer a melhor comparacao usando o algoritmo
     matches = flann.knnMatch(des1,des2,k=2)
-
+    centro = (frame.shape[1]//2, frame.shape[0]//2)
+    print(frame.shape[0])
     # store all the good matches as per Lowe's ratio test.
     good = []
     for m,n in matches:
@@ -51,47 +52,38 @@ def detect_features(img,kp1,des1,frame,frame_g):
 
         # Transforma os pontos da imagem origem para onde estao na imagem destino
         dst = cv2.perspectiveTransform(pts,M)
-
         # Desenha as linhas
         frame = cv2.polylines(frame,[np.int32(dst)],True,255,3, cv2.LINE_AA)
-	
-	# Returns
-	# Centro da frame
-	centro = (frame.shape[0]//2, frame.shape[1]//2)
-	#print(centro)
-	# Centro da imagem
-	x=0
-	y=0
-	for i in range(0, len(np.int32(dst)-1)):
-		x += np.int32(dst)[i][0][0]
-		y += np.int32(dst)[i][0][1]
-	media = (x//4, y//4)
-	#print("x: {}".format(x))
-	#print("y: {}".format(y))
-	#print("media: {}".format(media))
-	# Area da imagem
+        x=0
+        y=0
+        for i in range(0, len(np.int32(dst)-1)):
+            x += np.int32(dst)[i][0][0]
+            y += np.int32(dst)[i][0][1]
+        media = (x//4, y//4)
+        Pcentro=cv2.circle(frame,centro,10,150,3, cv2.LINE_AA)
+        Pcentro=cv2.circle(frame,media,10,255,3, cv2.LINE_AA)
         x1 = np.int32(dst)[0][0][0]
-	y1 = np.int32(dst)[0][0][1]
+        y1 = np.int32(dst)[0][0][1]
 
-	x2 = np.int32(dst)[1][0][0]
-	y2 = np.int32(dst)[1][0][1]
+        x2 = np.int32(dst)[1][0][0]
+        y2 = np.int32(dst)[1][0][1]
 
-	x3 = np.int32(dst)[2][0][0]
-	y3 = np.int32(dst)[2][0][1]
-
-
-	xdist1=x1-x2
-	ydist1=y1-y2
-
-	xdist2=x1-x3
-	ydist2=y1-y3
+        x3 = np.int32(dst)[2][0][0]
+        y3 = np.int32(dst)[2][0][1]
 
 
-	lado1=math.sqrt((xdist1)**2+(ydist1)**2)
-	lado2=math.sqrt((xdist2)**2+(ydist2)**2)
+        xdist1=x1-x2
+        ydist1=y1-y2
 
-	area=lado1*lado2
-    	print(area)
+        xdist2=x1-x3
+        ydist2=y1-y3
+
+
+        lado1=math.sqrt((xdist1)**2+(ydist1)**2)
+        lado2=math.sqrt((xdist2)**2+(ydist2)**2)
+
+        area=lado1*lado2
+        #print(area)
     else:
         print("Not enough matches are found - %d/%d" % (len(good),MIN_MATCH_COUNT))
         matchesMask = None
@@ -101,30 +93,31 @@ def detect_features(img,kp1,des1,frame,frame_g):
                     matchesMask = matchesMask, # draw only inliers
                     flags = 2)
     #frame=drawMatches(img,kp1,frame_g,kp2,good[:20])
-    
-    return media, centro, area
+    cv2.imshow('original',frame)
+
+    return media, centro, area, frame
 
 
-'''while(True):
+while(True):
     #print(timer)
     # Capture frame-by-frame
     #print("Novo frame")
     ret, frame = cap.read()
-
-    frame_gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-    frame_gray=cv2.medianBlur(frame_gray,5)
+    frame_g=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    frame_g=cv2.medianBlur(frame_g,5)
+    detect_features(dragonite, kp1, des1, frame, frame_g)
     #testar o bilateral filtering
-  
+
 
     #More drawing functions @ http://docs.opencv.org/2.4/modules/core/doc/drawing_functions.html
-    frame=detect_features(dragonite,kp1, des1,frame,frame_gray)
-    
+    #frame=detect_features(frame)[3]
+
     # Display the resulting frame
-    cv2.imshow('original',frame)
-    
+    #cv2.imshow('original',frame)
+
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     #print("No circles were found")
 # When everything done, release the capture
 cap.release()
-cv2.destroyAllWindows()'''
+cv2.destroyAllWindows()
