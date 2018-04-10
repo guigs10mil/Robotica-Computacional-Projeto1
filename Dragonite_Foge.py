@@ -14,7 +14,6 @@ from geometry_msgs.msg import Twist, Vector3, Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
-import Cor_Rosa
 import Dragonite
 
 
@@ -59,7 +58,7 @@ def roda_todo_frame(imagem):
 		frame_gray=cv2.cvtColor(cv_image,cv2.COLOR_BGR2GRAY)
 		frame_gray=cv2.medianBlur(frame_gray,5)
 
-    		cv_image=Dragonite.detect_features(dragonite,kp1, des1,cv_image,frame_gray)
+    		cv_image =Dragonite.detect_features(dragonite,kp1, des1,cv_image,frame_gray)
 
 		media, centro, area =  cv_image
 		depois = time.clock()

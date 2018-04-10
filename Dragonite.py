@@ -102,10 +102,10 @@ def detect_features(img,kp1,des1,frame,frame_g):
                     flags = 2)
     #frame=drawMatches(img,kp1,frame_g,kp2,good[:20])
     
-    return media, centro, area
+    return media, centro, area, frame
 
 
-'''while(True):
+while(True):
     #print(timer)
     # Capture frame-by-frame
     #print("Novo frame")
@@ -117,7 +117,7 @@ def detect_features(img,kp1,des1,frame,frame_g):
   
 
     #More drawing functions @ http://docs.opencv.org/2.4/modules/core/doc/drawing_functions.html
-    frame=detect_features(dragonite,kp1, des1,frame,frame_gray)
+    frame=detect_features(dragonite,kp1, des1,frame,frame_gray)[3]
     
     # Display the resulting frame
     cv2.imshow('original',frame)
@@ -127,4 +127,4 @@ def detect_features(img,kp1,des1,frame,frame_g):
     #print("No circles were found")
 # When everything done, release the capture
 cap.release()
-cv2.destroyAllWindows()'''
+cv2.destroyAllWindows()
