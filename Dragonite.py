@@ -89,12 +89,12 @@ def detect_features(img,kp1,des1,frame,frame_g):
         matchesMask = None
 
     draw_params = dict(matchColor = (0,255,0), # draw matches in green color
-                singlePointColor = None,
-                matchesMask = matchesMask, # draw only inliers
-                flags = 2)
-            #frame=drawMatches(img,kp1,frame_g,kp2,good[:20])
+                    singlePointColor = None,
+                    matchesMask = matchesMask, # draw only inliers
+                    flags = 2)
+    #frame=drawMatches(img,kp1,frame_g,kp2,good[:20])
 
-    return frame
+    return media, centro, area, frame
 
 
 while(True):
@@ -109,7 +109,7 @@ while(True):
 
 
     #More drawing functions @ http://docs.opencv.org/2.4/modules/core/doc/drawing_functions.html
-    frame=detect_features(dragonite,kp1, des1,frame,frame_gray)
+    frame=detect_features(dragonite,kp1, des1,frame,frame_gray)[3]
 
     # Display the resulting frame
     cv2.imshow('original',frame)
