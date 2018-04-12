@@ -17,9 +17,9 @@ import smach_ros
 
 
 def identifica_cor(frame):
-	'''
+			
 	Segmenta o maior objeto cuja cor é parecida com cor_h (HUE da cor, no espaço HSV).
-	'''
+	
 
 	# No OpenCV, o canal H vai de 0 até 179, logo cores similares ao 
 	# vermelho puro (H=0) estão entre H=-8 e H=8. 

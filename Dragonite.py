@@ -3,7 +3,7 @@ import cv2
 from matplotlib import pyplot as plt
 import math
 
-cap = cv2.VideoCapture(0)
+'''cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 600)
 
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 400)
@@ -11,7 +11,7 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 400)
 #surf = cv2.xfeatures2d.SIFT_create()
 surf = cv2.xfeatures2d.SURF_create(hessianThreshold=2000)
 dragonite=cv2.imread("dragonite.jpg")
-kp1, des1 = surf.detectAndCompute(dragonite,None)
+kp1, des1 = surf.detectAndCompute(dragonite,None)'''
 
 def detect_features(img, kp1, des1, frame, frame_g):
     MIN_MATCH_COUNT = 10
@@ -95,10 +95,10 @@ def detect_features(img, kp1, des1, frame, frame_g):
     #frame=drawMatches(img,kp1,frame_g,kp2,good[:20])
     cv2.imshow('original',frame)
 
-    return media, centro, area, frame
+    return media, centro, area
 
 
-while(True):
+'''while(True):
     #print(timer)
     # Capture frame-by-frame
     #print("Novo frame")
@@ -120,4 +120,4 @@ while(True):
     #print("No circles were found")
 # When everything done, release the capture
 cap.release()
-cv2.destroyAllWindows()
+cv2.destroyAllWindows()'''
