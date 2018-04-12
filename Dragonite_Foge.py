@@ -57,9 +57,7 @@ def roda_todo_frame(imagem):
 
 		frame_gray=cv2.cvtColor(cv_image,cv2.COLOR_BGR2GRAY)
 		frame_gray=cv2.medianBlur(frame_gray,5)
-		cv_image =Dragonite.detect_features(dragonite,kp1, des1,cv_image,frame_gray)
-
-		media, centro, area =  cv_image
+		media, centro, area = Dragonite.detect_features(dragonite,kp1, des1,cv_image,frame_gray)
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
 	except CvBridgeError as e:
