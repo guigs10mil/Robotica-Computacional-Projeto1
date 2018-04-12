@@ -26,9 +26,11 @@ atraso = 1.5E9 # 1 segundo e meio. Em nanossegundos
 
 area = 0.0 # Variavel com a area do maior contorno
 
-check_delay = False # Só usar se os relógios ROS da Raspberry e do Linux desktop estiverem sincronizados. Descarta imagens que chegam atrasadas demais
+check_delay = True # Só usar se os relógios ROS da Raspberry e do Linux desktop estiverem sincronizados. Descarta imagens que chegam atrasadas demais
 
-
+surf = cv2.xfeatures2d.SURF_create(hessianThreshold=5000)
+dragonite=cv2.imread("dragonite.jpg")
+kp1, des1 = surf.detectAndCompute(dragonite,None)
 
 
 
@@ -43,9 +45,7 @@ def roda_todo_frame(imagem):
 	lag = now-imgtime
 	delay = lag.nsecs
 
-	surf = cv2.xfeatures2d.SURF_create(hessianThreshold=5000)
-	dragonite=cv2.imread("dragonite.jpg")
-	kp1, des1 = surf.detectAndCompute(dragonite,None)
+
 
 	print("delay ", "{:.3f}".format(delay/1.0E9))
 	if delay > atraso and check_delay==True:
@@ -57,10 +57,9 @@ def roda_todo_frame(imagem):
 
 		frame_gray=cv2.cvtColor(cv_image,cv2.COLOR_BGR2GRAY)
 		frame_gray=cv2.medianBlur(frame_gray,5)
-		media, centro, area = Dragonite.detect_features(dragonite,kp1, des1,cv_image,frame_gray)
-		cv_image = Dragonite.detect_features(dragonite,kp1, des1,cv_image,frame_gray)[3]
+		media, centro, area= Dragonite.detect_features(dragonite,kp1, des1,cv_image,frame_gray)
 		depois = time.clock()
-		cv2.imshow("Camera", cv_image)
+		#cv2.imshow("Camera", cv_image)
 	except CvBridgeError as e:
 		print('ex', e)
 
@@ -91,12 +90,12 @@ if __name__=="__main__":
 				dif_x = media[0]-centro[0]
 				dif_y = media[1]-centro[1]
 				if math.fabs(dif_x)<30: # Se a media estiver muito proxima do centro anda para frente
-					vel = Twist(Vector3(0.5,0,0), Vector3(0,0,0))
+					vel = Twist(Vector3(-0.5,0,0), Vector3(0,0,0))
 				else:
 					if dif_x > 0: # Vira a direita
-						vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
+						vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
 					else: # Vira a esquerda
-						vel = Twist(Vector3(0,0,0), Vector3(0,0,0.2))
+						vel = Twist(Vector3(0,0,0), Vector3(0,0,0.5))
 			velocidade_saida.publish(vel)
 			rospy.sleep(0.01)
 

@@ -3,18 +3,10 @@ import cv2
 from matplotlib import pyplot as plt
 import math
 
-'''cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 600)
 
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 400)
-# Initiate surf detector
-#surf = cv2.xfeatures2d.SIFT_create()
 surf = cv2.xfeatures2d.SURF_create(hessianThreshold=2000)
-dragonite=cv2.imread("dragonite.jpg")
-kp1, des1 = surf.detectAndCompute(dragonite,None)'''
-
 def detect_features(img, kp1, des1, frame, frame_g):
-    MIN_MATCH_COUNT = 10
+    MIN_MATCH_COUNT = 60
 
     # find the keypoints and descriptors with SURF in each image
 
@@ -60,8 +52,8 @@ def detect_features(img, kp1, des1, frame, frame_g):
             x += np.int32(dst)[i][0][0]
             y += np.int32(dst)[i][0][1]
         media = (x//4, y//4)
-        Pcentro=cv2.circle(frame,centro,10,150,3, cv2.LINE_AA)
-        Pcentro=cv2.circle(frame,media,10,255,3, cv2.LINE_AA)
+        #Pcentro=cv2.circle(frame,centro,10,150,3, cv2.LINE_AA)
+        #Pcentro=cv2.circle(frame,media,10,255,3, cv2.LINE_AA)
         x1 = np.int32(dst)[0][0][0]
         y1 = np.int32(dst)[0][0][1]
 
@@ -83,10 +75,13 @@ def detect_features(img, kp1, des1, frame, frame_g):
         lado2=math.sqrt((xdist2)**2+(ydist2)**2)
 
         area=lado1*lado2
+        #print("matches are found - %d/%d" % (len(good),MIN_MATCH_COUNT))
         #print(area)
     else:
         print("Not enough matches are found - %d/%d" % (len(good),MIN_MATCH_COUNT))
         matchesMask = None
+        area = 0
+        media = (0,0)
 
     draw_params = dict(matchColor = (0,255,0), # draw matches in green color
                     singlePointColor = None,
@@ -94,30 +89,6 @@ def detect_features(img, kp1, des1, frame, frame_g):
                     flags = 2)
     #frame=drawMatches(img,kp1,frame_g,kp2,good[:20])
     cv2.imshow('original',frame)
+    cv2.waitKey(1)
+    return media, centro, area
 
-    return media, centro, area, frame
-
-
-'''while(True):
-    #print(timer)
-    # Capture frame-by-frame
-    #print("Novo frame")
-    ret, frame = cap.read()
-    frame_g=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-    frame_g=cv2.medianBlur(frame_g,5)
-    detect_features(dragonite, kp1, des1, frame, frame_g)
-    #testar o bilateral filtering
-
-
-    #More drawing functions @ http://docs.opencv.org/2.4/modules/core/doc/drawing_functions.html
-    #frame=detect_features(frame)[3]
-
-    # Display the resulting frame
-    #cv2.imshow('original',frame)
-
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-    #print("No circles were found")
-# When everything done, release the capture
-cap.release()
-cv2.destroyAllWindows()'''

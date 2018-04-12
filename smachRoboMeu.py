@@ -30,13 +30,13 @@ area = 0.0
 
 tolerancia_x = 50
 tolerancia_y = 20
-ang_speed = 0.1
+ang_speed = 0.25
 area_ideal = 60000 # área da distancia ideal do contorno - note que varia com a resolução da câmera
 tolerancia_area = 20000
 
 # Atraso máximo permitido entre a imagem sair do Turbletbot3 e chegar no laptop do aluno
-atraso = 1.5
-check_delay = False # Só usar se os relógios ROS da Raspberry e do Linux desktop estiverem sincronizados
+atraso = 1.5E9 # 1 segundo e meio. Em nanossegundos
+check_delay = True # Só usar se os relógios ROS da Raspberry e do Linux desktop estiverem sincronizados
 
 scanmin = 5
 distanciaMin = 0.3
@@ -86,7 +86,7 @@ class Procurando(smach.State):
 
 		global scanmin
 		if media is None or len(media) == 0 or media[0]==0:
-			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
+			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, ang_speed))
 			velocidade_saida.publish(vel)
 			rospy.sleep(sleeptime)
 			return 'procurando'
@@ -149,7 +149,7 @@ class Andando(smach.State):
 			return 'sumiu'
 
 		else:
-			vel = Twist(Vector3(1, 0, 0), Vector3(0, 0, 0))
+			vel = Twist(Vector3(-1, 0, 0), Vector3(0, 0, 0))
 			velocidade_saida.publish(vel)
 			rospy.sleep(sleeptime)
 			return 'andando'
