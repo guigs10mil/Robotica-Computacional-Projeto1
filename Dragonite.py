@@ -95,7 +95,7 @@ def detect_features(img, kp1, des1, frame, frame_g):
     #frame=drawMatches(img,kp1,frame_g,kp2,good[:20])
     cv2.imshow('original',frame)
 
-    return media, centro, area
+    return media, centro, area, frame
 
 
 '''while(True):
