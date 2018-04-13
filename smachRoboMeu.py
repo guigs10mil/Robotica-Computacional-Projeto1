@@ -31,6 +31,8 @@ area = 0.0
 tolerancia_x = 50
 tolerancia_y = 20
 ang_speed = 0.25
+turn_speed = 0.5
+escape_speed = 0.2
 area_ideal = 60000 # área da distancia ideal do contorno - note que varia com a resolução da câmera
 tolerancia_area = 20000
 
@@ -39,7 +41,7 @@ atraso = 1.5E9 # 1 segundo e meio. Em nanossegundos
 check_delay = True # Só usar se os relógios ROS da Raspberry e do Linux desktop estiverem sincronizados
 
 scanmin = 5
-distanciaMin = 0.3
+distanciaMin = 0.20
 sleeptime = 0.2 
 
 def roda_todo_frame(imagem):
@@ -67,13 +69,16 @@ def roda_todo_frame(imagem):
 def scaneou(dado):
 	global scanmin
 	scanmin = 5
+	global angle_min
+	angle_min = 0
 	
 	ranges = np.array(dado.ranges).round(decimals=2)
 	# ranges = ranges[140:210]  # só na frente
-	for i in ranges: 
-		if i < scanmin and i != 0:
-			scanmin = i
-
+	for i in range(len(ranges)-1): 
+		if ranges[i] < scanmin and ranges[i] != 0:
+			scanmin = ranges[i]
+			angle_min =  i
+	print("///////////",angle_min)
 
 class Procurando(smach.State):
 	def __init__(self):
@@ -162,7 +167,14 @@ class Sobrevivendo(smach.State):
 		global scanmin
 
 		if scanmin < distanciaMin:
-			vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
+			if angle_min > 0 and angle_min <= 90:
+				vel = Twist(Vector3(escape_speed, 0, 0), Vector3(0, 0, (math.tan(math.radians(angle_min)))*turn_speed))
+			elif angle_min > 90 and angle_min <= 180:
+				vel = Twist(Vector3(-escape_speed, 0, 0), Vector3(0, 0, (math.tan(math.radians(angle_min)))*turn_speed))
+			elif angle_min > 180 and angle_min <= 270 :
+				vel = Twist(Vector3(-escape_speed, 0, 0), Vector3(0, 0, (math.tan(math.radians(angle_min)))*turn_speed))
+			else:
+				vel = Twist(Vector3(escape_speed, 0, 0), Vector3(0, 0, (math.tan(math.radians(angle_min)))*turn_speed))
 			velocidade_saida.publish(vel)
 			rospy.sleep(sleeptime)
 			return 'sobrevivendo'
