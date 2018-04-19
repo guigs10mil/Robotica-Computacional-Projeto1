@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 import math
 
 
-surf = cv2.xfeatures2d.SURF_create(hessianThreshold=2000)
+surf = cv2.xfeatures2d.SURF_create(hessianThreshold=3000)
 def detect_features(img, kp1, des1, frame, frame_g):
     MIN_MATCH_COUNT = 60
 
@@ -22,7 +22,7 @@ def detect_features(img, kp1, des1, frame, frame_g):
     # Tenta fazer a melhor comparacao usando o algoritmo
     matches = flann.knnMatch(des1,des2,k=2)
     centro = (frame.shape[1]//2, frame.shape[0]//2)
-    print(frame.shape[0])
+    #print(frame.shape[0])
     # store all the good matches as per Lowe's ratio test.
     good = []
     for m,n in matches:
