@@ -34,12 +34,14 @@ def roda_todo_frame(imagem):
 	global cv_image
 	global media
 	global centro
+	global roi_hist
+	global learned
 
+	
 	now = rospy.get_rostime()
 	imgtime = imagem.header.stamp
 	lag = now-imgtime
 	delay = lag.nsecs
-
 
 
 	print("delay ", "{:.3f}".format(delay/1.0E9))
@@ -49,11 +51,22 @@ def roda_todo_frame(imagem):
 	try:
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
-		media, centro, area= detectCamShift(cv_image)
+		k = cv2.waitKey(60) & 0xff
+		if k == 32 :
+			roi_hist=detectCamShift.makeHist(cv_image)
+			media, centro, area = detectCamShift.detectCamShift(cv_image, roi_hist)
+			learned = True
+		elif learned == False:
+			roi_hist = True
+			media, centro, area = detectCamShift.detectCamShift(cv_image, roi_hist)
+
 		depois = time.clock()
 		#cv2.imshow("Camera", cv_image)
 	except CvBridgeError as e:
 		print('ex', e)
+		
+
+
 
 
 
@@ -78,16 +91,17 @@ if __name__=="__main__":
 
 		while not rospy.is_shutdown():
 			vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
-			if len(media) != 0 and len(centro) != 0:
-				dif_x = media[0]-centro[0]
-				dif_y = media[1]-centro[1]
-				if math.fabs(dif_x)<30: # Se a media estiver muito proxima do centro anda para frente
-					vel = Twist(Vector3(-0.5,0,0), Vector3(0,0,0))
-				else:
-					if dif_x > 0: # Vira a direita
-						vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
-					else: # Vira a esquerda
-						vel = Twist(Vector3(0,0,0), Vector3(0,0,0.5))
+			if media is not None and centro is not None:
+				if len(media) != 0 and len(centro) != 0:
+					dif_x = media[0]-centro[0]
+					dif_y = media[1]-centro[1]
+					if math.fabs(dif_x)<30: # Se a media estiver muito proxima do centro anda para frente
+						vel = Twist(Vector3(-0.5,0,0), Vector3(0,0,0))
+					else:
+						if dif_x > 0: # Vira a direita
+							vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.5))
+						else: # Vira a esquerda
+							vel = Twist(Vector3(0,0,0), Vector3(0,0,0.5))
 			velocidade_saida.publish(vel)
 			rospy.sleep(0.01)
 

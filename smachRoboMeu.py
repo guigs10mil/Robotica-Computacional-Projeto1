@@ -13,12 +13,14 @@ from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import LaserScan
 from sensor_msgs.msg import Imu
+#from turtlebot3_msgs.msg import Sound
 import transformations
 import smach
 import smach_ros
 
 import Cor_Rosa
 import Dragonite
+import detectCamShift
 
 bridge = CvBridge()
 
@@ -39,8 +41,8 @@ tolerancia_x = 50
 tolerancia_y = 20
 ang_speed = 0.25
 turn_speed = 0.5
-escape_speed = -0.2
-walking_speed = -0.4
+escape_speed = +0.2
+walking_speed = +0.4
 area_ideal = 60000 # área da distancia ideal do contorno - note que varia com a resolução da câmera
 tolerancia_area = 20000
 contador = 0
@@ -67,7 +69,11 @@ def roda_todo_frame(imagem):
 	global media2
 	global centro2
 	global area2
-	
+	global media3
+	global centro3
+	global area3
+	global roi_hist
+	global track_window
 	
 
 	now = rospy.get_rostime()
@@ -80,13 +86,29 @@ def roda_todo_frame(imagem):
 		antes = time.clock()
 		cv_image = bridge.compressed_imgmsg_to_cv2(imagem, "bgr8")
 		media, centro, area = Cor_Rosa.identifica_cor(cv_image)
-		if contador%5==0:
-			frame_gray=cv2.cvtColor(cv_image,cv2.COLOR_BGR2GRAY)
-			frame_gray=cv2.medianBlur(frame_gray,5)
-			media2, centro2, area2= Dragonite.detect_features(dragonite,kp1, des1,cv_image,frame_gray)
+		#deteccao do madfox foi comentada para o teste com o Camshift
+		#para trocar so descomentar o codigo e para ter os 2 ao mesmo tempo,
+		#trocar as variaveis do camshift para media3,centro3,area3
+		# if (contador)%5==0:
+		# 	frame_gray=cv2.cvtColor(cv_image,cv2.COLOR_BGR2GRAY)
+		# 	frame_gray=cv2.medianBlur(frame_gray,5)
+		# 	media2, centro2, area2= Dragonite.detect_features(dragonite,kp1, des1,cv_image,frame_gray)
+
+		if (contador)%2==0:
+			if 'roi_hist' in globals():
+				media2, centro2, area2 = detectCamShift.detectCamShift(cv_image, roi_hist, track_window)
+				
+			else:
+				roi_hist, track_window = detectCamShift.makeHist(cv_image)
+
+			k = cv2.waitKey(60) & 0xff
+			if k == 32 :
+				roi_hist, track_window = detectCamShift.makeHist(cv_image)
+
 
 		depois = time.clock()
 		cv2.imshow("Camera", cv_image)
+
 	except CvBridgeError as e:
 		print('ex', e)
 		
@@ -115,11 +137,11 @@ def leu_imu(dado):
 	
 
 class Procurando(smach.State):
+	#o robo rotaciona para procurar objetos
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['achou', 'procurando', 'vaibater', 'brincando'])
 	def execute(self, userdata):
 		global velocidade_saida
-
 		if scanmin < distanciaMin:
 			return 'vaibater'
 
@@ -133,6 +155,7 @@ class Procurando(smach.State):
 			velocidade_saida.publish(vel)
 			rospy.sleep(sleeptime)
 			return 'procurando'
+		
 
 		else:
 			return 'achou'
@@ -186,8 +209,15 @@ class Andando(smach.State):
 
 		if scanmin < distanciaMin:
 			return 'vaibater'
+		#o robo recua quando bate em um objeto enquanto esticer seguindo o pano rosa
+		if linearAcelX < -2 :
+			print('bateuu')
+			
+			vel = Twist(Vector3(-escape_speed,0,0), Vector3(0,0,0))
+			velocidade_saida.publish(vel)
 
-		if linearAcelX < -2:
+			rospy.sleep(0.5)
+
 			vel = Twist(Vector3(-escape_speed,0,0), Vector3(0,0,0))
 			velocidade_saida.publish(vel)
 
@@ -197,6 +227,7 @@ class Andando(smach.State):
 			velocidade_saida.publish(vel)
 
 			rospy.sleep(1.5)
+			return 'sumiu'
 
 		if math.fabs(media[0]) > math.fabs(centro[0] + tolerancia_x) or math.fabs(media[0]) < math.fabs(centro[0] - tolerancia_x):
 			return 'alinhando'
@@ -205,21 +236,22 @@ class Andando(smach.State):
 			return 'sumiu'
 
 		else:
-			#print(math.sqrt(area))
-			vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
-			vel = Twist(Vector3(-1.2*(1-(math.sqrt(area)/450)), 0, 0), Vector3(0, 0, 0))
-			print("/////////////////?????????",-1.2*(1-(math.sqrt(area)/450)))
-			velocidade_saida.publish(vel)
-			rospy.sleep(sleeptime)
+			#controle proporcional para seguir o objeto
+			if math.sqrt(area) > 100:#objeto so eh seguido se a area detectada for razoavel
+				vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
+				vel = Twist(Vector3(+1.2*(1-(math.sqrt(area)/400)), 0, 0), Vector3(0, 0, 0))
+				velocidade_saida.publish(vel)
+				rospy.sleep(sleeptime)
 			return 'andando'
 
 
 class Sobrevivendo(smach.State):
+	#Robo usa o laserscan para detectar objetos proximos e reagir a eles
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['sobrevivendo', 'procurando'])
 	def execute(self, userdata):
 		global scanmin
-
+		#robo desvia direcionalmente em relacao ao objeto mais proximo em um raio de 20cm
 		if scanmin < distanciaMin:
 			if angle_min > 0 and angle_min <= 90:
 				vel = Twist(Vector3(-escape_speed, 0, 0), Vector3(0, 0, (math.tan(math.radians(angle_min)))*turn_speed))
@@ -237,9 +269,13 @@ class Sobrevivendo(smach.State):
 			return 'procurando'
 
 class Brincando(smach.State):
+	#Reacao feita quando o madfox (ou o camshift) e detectado -- O robo da uma dancadinha
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['procurando'])
 	def execute(self, userdata):
+		# global som_saida
+		# som_saida.publish(5)
+
 		vel = Twist(Vector3(1, 0, 0), Vector3(0, 0, 0))
 		velocidade_saida.publish(vel)
 		rospy.sleep(0.2)
@@ -264,6 +300,8 @@ def main():
 	recebedor = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, roda_todo_frame, queue_size=40, buff_size = 2**24)
 
 	velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
+
+	# som_saida = rospy.Publisher("/sound", Sound, queue_size = 2)
 
 	recebe_scan1 = rospy.Subscriber("/scan", LaserScan, scaneou)
 
